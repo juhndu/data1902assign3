@@ -15,7 +15,7 @@ data = pd.get_dummies(data, columns=['fuel_type', 'heat_type', 'sewer_type'], dr
 #print(data.head())
 
 #save the engineered dataset
-data.to_csv('datasets/ny_hp_feature_engineered.csv', index=False)
+#data.to_csv('datasets/ny_hp_feature_engineered.csv', index=False)
 
 
 
