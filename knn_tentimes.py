@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsRegressor
@@ -74,3 +75,20 @@ print("\n================ Summary Across Random States ================")
 print(f"Average RMSE: {np.mean(RMSE_list):.2f}")
 print(f"Average MAE: {np.mean(MAE_list):.2f}")
 print(f"Average R²: {np.mean(R2_list):.3f}")
+
+
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, y_pred, alpha=0.6, edgecolor='k', color='dodgerblue')
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()],
+         color='red', linestyle='--', linewidth=2, label='Ideal fit (y = x)')
+plt.xlabel('Actual House Price', fontsize=12)
+plt.ylabel('Predicted House Price', fontsize=12)
+plt.title('KNN Predictions vs Actual Prices', fontsize=14)
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+
+# Save the figure
+plt.savefig('plots/knn_predictions_vs_actual.png', dpi=300)
+plt.show()
+print("✅ Saved plot as 'knn_predictions_vs_actual.png'")

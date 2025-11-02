@@ -104,6 +104,23 @@ importances = final_model.get_booster().get_score(importance_type='gain')
 sorted_feats = sorted(importances.items(), key=lambda x: x[1], reverse=True)
 print("Top important features:\n", sorted_feats[:10])
 
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, y_pred, alpha=0.6, edgecolor='k', color='dodgerblue')
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()],
+         color='red', linestyle='--', linewidth=2, label='Ideal fit (y = x)')
+plt.xlabel('Actual House Price', fontsize=12)
+plt.ylabel('Predicted House Price', fontsize=12)
+plt.title('XGB Predictions vs Actual Prices', fontsize=14)
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+
+# Save the figure
+plt.savefig('plots/xgb_predictions_vs_actual.png', dpi=300)
+plt.show()
+print("✅ Saved plot as 'xgb_predictions_vs_actual.png'")
+
+
 #Choose which trees to visualize
 num_trees = final_model.get_booster().num_boosted_rounds()
 print(f"Total trees in model: {num_trees}")
