@@ -66,6 +66,6 @@ plt.xlabel('Predicted Values')
 plt.ylabel('Residuals')
 plt.show()
 
-sm.qqplot(residuals, line='45', fit=True)
+sm.qqplot(residuals, line='s', fit=True)
 plt.title('QQ Plot of Residuals')
 plt.show()
