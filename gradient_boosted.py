@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import root_mean_squared_error
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error
 from xgboost import XGBRegressor
 
 
@@ -18,76 +18,92 @@ for col in categorical_cols:
 X = df.drop('price', axis=1)
 y = df['price']
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
 
-xgb = XGBRegressor(
-    objective='reg:squarederror',
-    tree_method='hist',
-    enable_categorical=True,  # no categorical cols in this dataset
-    random_state=42
-)
+random_states = [42, 67, 314, 2025, 505, 2718, 777, 404, 911, 420]
+RMSE_list = []
+MAE_list = []
 
-param_grid = {
-    'n_estimators': [200, 400, 600],
-    'max_depth': [3, 5, 7],
-    'learning_rate': [0.01, 0.05, 0.1],
-    'subsample': [0.8, 1.0],
-    'colsample_bytree': [0.8, 1.0],
-    'reg_lambda': [1, 3, 5]
-}
+for current_random_state in random_states:
 
-grid_search = GridSearchCV(
-    estimator=xgb,
-    param_grid=param_grid,
-    scoring='neg_root_mean_squared_error',  # sklearn uses negative loss for maximization
-    cv=5,
-    verbose=1,
-    n_jobs=-1
-)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=current_random_state
+    )
 
-grid_search.fit(X_train, y_train)
-print("Best Parameters:\n", grid_search.best_params_)
+    xgb = XGBRegressor(
+        objective='reg:squarederror',
+        tree_method='hist',
+        enable_categorical=True,
+        random_state=current_random_state
+    )
+
+    param_grid = {
+        'n_estimators': [200, 400, 600],
+        'max_depth': [3, 5, 7],
+        'learning_rate': [0.01, 0.05, 0.1],
+        'subsample': [0.8, 1.0],
+        'colsample_bytree': [0.8, 1.0],
+        'reg_lambda': [1, 3, 5]
+    }
+
+    grid_search = GridSearchCV(
+        estimator=xgb,
+        param_grid=param_grid,
+        scoring='neg_root_mean_squared_error', 
+        cv=5,
+        verbose=1,
+        n_jobs=-1
+    )
+
+    grid_search.fit(X_train, y_train)
+    print("Best Parameters:\n", grid_search.best_params_)
 
 
-best_model = grid_search.best_estimator_
+    best_model = grid_search.best_estimator_
 
-#new model trained on all data + early stopping on validation set
-X_tr, X_val, y_tr, y_val = train_test_split(
-    X_train, y_train, test_size=0.1, random_state=42
-)
-final_model = XGBRegressor(
-    objective='reg:squarederror',
-    tree_method='hist',
-    enable_categorical=True,
-    random_state=42,
-    eval_metric='rmse',
-    early_stopping_rounds=20,
-    **grid_search.best_params_
-)
-final_model.fit(
-    X_tr, y_tr,
-    eval_set=[(X_val, y_val)],
-    verbose=True
-)
-y_pred = final_model.predict(X_test)
-rmse = np.sqrt(root_mean_squared_error(y_test, y_pred))
-print(f"\nFinalModel RMSE on test set: {rmse:.4f}")
+    #new model trained on all data + early stopping on validation set
+    X_tr, X_val, y_tr, y_val = train_test_split(
+        X_train, y_train, test_size=0.1, random_state=current_random_state
+    )
+    final_model = XGBRegressor(
+        objective='reg:squarederror',
+        tree_method='hist',
+        enable_categorical=True,
+        random_state=current_random_state,
+        eval_metric='rmse',
+        early_stopping_rounds=20,
+        **grid_search.best_params_
+    )
+    final_model.fit(
+        X_tr, y_tr,
+        eval_set=[(X_val, y_val)],
+        verbose=False
+    )
+    y_pred = final_model.predict(X_test)
+    rmse = root_mean_squared_error(y_test, y_pred)
+    print(f"\nFinalModel RMSE on test set: {rmse:.4f} randomstate: {current_random_state}")
+    RMSE_list.append(rmse)
+    mae = mean_absolute_error(y_test, y_pred)
+    print(f"\nFinalModel RMSE on test set: {rmse:.4f} randomstate: {current_random_state}")
+    MAE_list.append(mae)
 
-y_pred = best_model.predict(X_test)
-rmse = root_mean_squared_error(y_test, y_pred)
-print(f"\nBestModel RMSE on test set: {rmse:.4f}")
+    #y_pred = best_model.predict(X_test)
+    #rmse = root_mean_squared_error(y_test, y_pred)
+    #print(f"\nBestModel RMSE on test set: {rmse:.4f}")
 
+print(f'Average Model RMSE: {np.mean(RMSE_list)}')
+print(f'Average Model MAE: {np.mean(MAE_list)}')
+
+#residual plot
 residuals = y_test - y_pred
-plt.figure(figsize=(7,5))
-plt.scatter(y_pred, residuals, alpha=0.6)
-plt.axhline(y=0, color='red', linestyle='--')
-plt.title('Residuals vs Predicted Values')
+plt.figure(figsize=(10,6))
+plt.scatter(y_pred, residuals)
+plt.axhline(0, color='red', linestyle='--')
+plt.title('Residuals vs Predicted Values (Baseline Model)')
 plt.xlabel('Predicted Values')
 plt.ylabel('Residuals')
-plt.show()
+plt.savefig('plots/baseline_model/residuals_baseline_model.png')
 
-sm.qqplot(residuals, line='45', fit=True)
-plt.title('QQ Plot of Residuals')
-plt.show()
+### normality of residuals via qq plot
+sm.qqplot(residuals, line ='s')
+plt.title('QQ Plot of Residuals (Baseline Model)')
+plt.savefig('plots/baseline_model/qqplot_residuals_baseline_model.png')
