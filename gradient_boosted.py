@@ -53,9 +53,31 @@ print("Best Parameters:\n", grid_search.best_params_)
 
 best_model = grid_search.best_estimator_
 
+#new model trained on all data + early stopping on validation set
+X_tr, X_val, y_tr, y_val = train_test_split(
+    X_train, y_train, test_size=0.1, random_state=42
+)
+final_model = XGBRegressor(
+    objective='reg:squarederror',
+    tree_method='hist',
+    enable_categorical=True,
+    random_state=42,
+    eval_metric='rmse',
+    early_stopping_rounds=20,
+    **grid_search.best_params_
+)
+final_model.fit(
+    X_tr, y_tr,
+    eval_set=[(X_val, y_val)],
+    verbose=True
+)
+y_pred = final_model.predict(X_test)
+rmse = np.sqrt(root_mean_squared_error(y_test, y_pred))
+print(f"\nFinalModel RMSE on test set: {rmse:.4f}")
+
 y_pred = best_model.predict(X_test)
 rmse = root_mean_squared_error(y_test, y_pred)
-print(f"\nBest RMSE on test set: {rmse:.4f}")
+print(f"\nBestModel RMSE on test set: {rmse:.4f}")
 
 residuals = y_test - y_pred
 plt.figure(figsize=(7,5))
