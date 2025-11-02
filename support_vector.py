@@ -27,54 +27,102 @@ preprocessor = ColumnTransformer(
     ]
 )
 
-# Use the default rbf kernel
-svm_pipeline = Pipeline(steps=[
-    ('preprocessor', preprocessor),
-    ('regressor', SVR())
-])
-
 #random states for robustness testing
 random_states = [42, 67, 314, 2025, 505, 2718, 777, 404, 911, 420]
 RMSE_list = []
 MAE_list = []
 r2_list = []
 best_params_list = []
-param_grid = {
-    'regressor__kernel': ['rbf', 'poly'],
-    'regressor__C': [1, 10, 100],
-    'regressor__gamma': ['scale', 0.1, 0.01],
-    'regressor__epsilon': [0.1, 0.2, 0.5]
-}
 
-for current_random_state in random_states:
-    print(f"\nRandom State: {current_random_state}")
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=current_random_state)
-    
-    grid_search = GridSearchCV(
-        svm_pipeline, param_grid,
-        cv=3, # 3-fold CV for speed; can increase to 5
-        scoring='r2', # Optimize for R²
-        n_jobs=-1, # Use all CPU cores
-        verbose=1
-    )
-    grid_search.fit(X_train, y_train)
-    
-    best_model = grid_search.best_estimator_
-    best_params = grid_search.best_params_
-    best_params_list.append(best_params)
-    
-    y_pred = best_model.predict(X_test)
-    
-    rmse = root_mean_squared_error(y_test, y_pred)
-    mae = mean_absolute_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-    print(f"RMS Error: {rmse:.2f} randomstate: {current_random_state}")
-    print(f"Mean Absolute Error: {mae:.2f}")
-    print(f"R² Score: {r2:.3f}")
-    RMSE_list.append(rmse)
-    MAE_list.append(mae)
-    r2_list.append(r2)
+choice = input("Do you want to perform hyperparameter tuning for SVR? (yes/no): ").strip().lower()
+if choice == 'yes':
+    print("Hyperparameter tuning will be performed.")
+    svm_pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('regressor', SVR())
+    ])
+    param_grid = {
+        'regressor__kernel': ['linear', 'poly', 'rbf'],
+        'regressor__C': [10, 50, 100, 200],
+        'regressor__gamma': ['scale', 0.01, 0.1, 1],
+        'regressor__epsilon': [0.01, 0.05, 0.1, 0.2, 0.5],
+        'regressor__degree': [2, 3, 4, 5],   # only used if kernel='poly'
+        'regressor__coef0': [0, 0.1, 1, 10]  # only used if kernel='poly'
+    }
+
+    for current_random_state in random_states:
+        print(f"\nRandom State: {current_random_state}")
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=current_random_state)
+        
+        grid_search = GridSearchCV(
+            svm_pipeline, param_grid,
+            cv=3, # 3-fold CV for speed; can increase to 5
+            scoring='r2', # Optimize for R²
+            n_jobs=-1, # Use all CPU cores
+            verbose=1
+        )
+        grid_search.fit(X_train, y_train)
+        
+        best_model = grid_search.best_estimator_
+        best_params = grid_search.best_params_
+        best_params_list.append(best_params)
+        
+        y_pred = best_model.predict(X_test)
+        
+        rmse = root_mean_squared_error(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        print(f"RMS Error: {rmse:.2f} randomstate: {current_random_state}")
+        print(f"Mean Absolute Error: {mae:.2f}")
+        print(f"R² Score: {r2:.3f}")
+        RMSE_list.append(rmse)
+        MAE_list.append(mae)
+        r2_list.append(r2)
+else:
+    print("Skipping hyperparameter tuning. Using saved SVR parameters.")
+    best_params = {'42':{'regressor__C': 100, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.01, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '67':{'regressor__C': 200, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.01, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '314':{'regressor__C': 200, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.5, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '2025':{'regressor__C': 100, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.5, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '505':{'regressor__C': 10, 'regressor__coef0': 10, 'regressor__degree': 5, 'regressor__epsilon': 0.5, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '2718':{'regressor__C': 50, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.01, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '777': {'regressor__C': 50, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.5, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '404':{'regressor__C': 10, 'regressor__coef0': 10, 'regressor__degree': 5, 'regressor__epsilon': 0.01, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '911':{'regressor__C': 50, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.01, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'},
+                   '420':{'regressor__C': 50, 'regressor__coef0': 10, 'regressor__degree': 4, 'regressor__epsilon': 0.5, 'regressor__gamma': 0.01, 'regressor__kernel': 'poly'}}
+    for current_random_state in random_states:
+        print(f"\nRandom State: {current_random_state}")
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=current_random_state)
+        
+        svm_pipeline = Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('regressor', SVR(
+                C=best_params[str(current_random_state)]['regressor__C'],
+                coef0=best_params[str(current_random_state)]['regressor__coef0'],
+                degree=best_params[str(current_random_state)]['regressor__degree'],
+                epsilon=best_params[str(current_random_state)]['regressor__epsilon'],
+                gamma=best_params[str(current_random_state)]['regressor__gamma'],
+                kernel=best_params[str(current_random_state)]['regressor__kernel']
+            ))
+        ])
+        
+        svm_pipeline.fit(X_train, y_train)
+        
+        y_pred = svm_pipeline.predict(X_test)
+        
+        rmse = root_mean_squared_error(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        print(f"RMS Error: {rmse:.2f} randomstate: {current_random_state}")
+        print(f"Mean Absolute Error: {mae:.2f}")
+        print(f"R² Score: {r2:.3f}")
+        RMSE_list.append(rmse)
+        MAE_list.append(mae)
+        r2_list.append(r2)
+
+
 
 print("\n================ Summary Across Random States ================")
 print(f"Avg RMSE: {np.mean(RMSE_list):.2f}")
