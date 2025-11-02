@@ -152,7 +152,13 @@ plt.xlabel('Predicted Values')
 plt.ylabel('Residuals')
 plt.savefig('plots/baseline_model/residuals_xgb_model.png')
 
+<<<<<<< HEAD
+sm.qqplot(residuals, line='s', fit=True)
+plt.title('QQ Plot of Residuals')
+plt.show()
+=======
 ### normality of residuals via qq plot
 sm.qqplot(residuals, line ='s')
 plt.title('QQ Plot of Residuals (Baseline Model)')
 plt.savefig('plots/baseline_model/qqplot_residuals_xgb_model.png')
+>>>>>>> a859b885ad253cf1235a2d4886bebb8d63506764
