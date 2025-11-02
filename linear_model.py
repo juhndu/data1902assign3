@@ -15,6 +15,7 @@ data = pd.read_csv('datasets/ny_hp_cleaned.csv')
 random_states = [42, 67, 314, 2025, 505, 2718, 777, 404, 911, 420]
 RMSE_list = []
 MAE_list = []
+r2_list = []
 
 for current_random_state in random_states:
     # split data into train val, test using function from data_split.py
@@ -33,11 +34,14 @@ for current_random_state in random_states:
     mae = metrics.mean_absolute_error(y_test, y_pred)
     #print(f'Baseline Model MAE: {mae} randomstate: {current_random_state}')
     MAE_list.append(mae)
+    r2 = metrics.r2_score(y_test, y_pred)
+    r2_list.append(r2)
 
     model_bm.summary()
 
 print(f'Average Model RMSE: {np.mean(RMSE_list)}')
 print(f'Average Model MAE: {np.mean(MAE_list)}')
+print(f'Avg Model R² Score: {np.mean(r2_list)}')
 
 #residual plot
 y_pred = model_bm.predict(X_train)

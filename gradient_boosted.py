@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import root_mean_squared_error, mean_absolute_error
-from xgboost import XGBRegressor
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
+
+from xgboost import XGBRegressor, plot_tree
+
+
 
 
 df = pd.read_csv('datasets/ny_hp_cleaned.csv')
@@ -22,6 +25,7 @@ y = df['price']
 random_states = [42, 67, 314, 2025, 505, 2718, 777, 404, 911, 420]
 RMSE_list = []
 MAE_list = []
+r2_list = []
 
 for current_random_state in random_states:
 
@@ -85,6 +89,8 @@ for current_random_state in random_states:
     mae = mean_absolute_error(y_test, y_pred)
     print(f"\nFinalModel RMSE on test set: {rmse:.4f} randomstate: {current_random_state}")
     MAE_list.append(mae)
+    r2 = r2_score(y_test, y_pred)
+    r2_list.append(r2)
 
     #y_pred = best_model.predict(X_test)
     #rmse = root_mean_squared_error(y_test, y_pred)
@@ -92,6 +98,32 @@ for current_random_state in random_states:
 
 print(f'Average Model RMSE: {np.mean(RMSE_list)}')
 print(f'Average Model MAE: {np.mean(MAE_list)}')
+print(f'Average Model R2 Score: {np.mean(r2_list)}')
+
+importances = final_model.get_booster().get_score(importance_type='gain')
+sorted_feats = sorted(importances.items(), key=lambda x: x[1], reverse=True)
+print("Top important features:\n", sorted_feats[:10])
+
+#Choose which trees to visualize
+num_trees = final_model.get_booster().num_boosted_rounds()
+print(f"Total trees in model: {num_trees}")
+
+# You can visualize, for example, the first few or trees where top features appear most
+trees_to_plot = [0, 1, 2, 3, 4]  # or pick based on your analysis
+
+#Plot trees inline using matplotlib
+plt.figure(figsize=(20, 10))
+plot_tree(final_model, num_trees=trees_to_plot[0], rankdir='LR')
+plt.title(f"Tree {trees_to_plot[0]}")
+plt.savefig(f'plots/trees/treeinline_{trees_to_plot[0]}.png')
+
+# Optionally, plot several trees
+for tree_idx in trees_to_plot[1:3]:
+    plt.figure(figsize=(20, 10))
+    plot_tree(final_model, num_trees=tree_idx, rankdir='LR')
+    plt.title(f"Tree {tree_idx}")
+    plt.savefig(f'plots/trees/tree_{tree_idx}.png')
+
 
 #residual plot
 residuals = y_test - y_pred
@@ -101,9 +133,9 @@ plt.axhline(0, color='red', linestyle='--')
 plt.title('Residuals vs Predicted Values (Baseline Model)')
 plt.xlabel('Predicted Values')
 plt.ylabel('Residuals')
-plt.savefig('plots/baseline_model/residuals_baseline_model.png')
+plt.savefig('plots/baseline_model/residuals_xgb_model.png')
 
 ### normality of residuals via qq plot
 sm.qqplot(residuals, line ='s')
 plt.title('QQ Plot of Residuals (Baseline Model)')
-plt.savefig('plots/baseline_model/qqplot_residuals_baseline_model.png')
+plt.savefig('plots/baseline_model/qqplot_residuals_xgb_model.png')
