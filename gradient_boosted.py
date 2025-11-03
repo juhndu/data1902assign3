@@ -41,10 +41,10 @@ for current_random_state in random_states:
     )
 
     param_grid = {
-        'n_estimators': [200, 400, 600],
-        'max_depth': [3, 5, 7],
+        'n_estimators': [200, 300, 400],
+        'max_depth': [3, 4, 5],
         'learning_rate': [0.01, 0.05, 0.1],
-        'subsample': [0.8, 1.0],
+        'subsample': [0.6, 0.8, 1.0],
         'colsample_bytree': [0.8, 1.0],
         'reg_lambda': [1, 3, 5]
     }
