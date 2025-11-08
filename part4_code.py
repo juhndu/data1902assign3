@@ -204,8 +204,8 @@ print("Saved faceted line chart as HTML.")
 # -----------------------------------------
 import pandas as pd
 import plotly.express as px
-import json
-import webbrowser, os
+import plotly.graph_objects as go
+import json, os, webbrowser
 
 # === 1. Load and prepare your data ===
 df = pd.read_csv("processed_data/suburb_yearly_bybednum_sydney_enriched.csv")
@@ -213,6 +213,7 @@ df.columns = df.columns.str.strip()
 df["suburb"] = df["suburb"].str.strip().str.upper()
 df["SydneyRegion"] = df["SydneyRegion"].str.strip()
 df = df[["suburb", "year", "median", "SydneyRegion"]].dropna()
+
 df_grouped = (
     df.groupby(["suburb", "year", "SydneyRegion"])["median"]
     .median()
@@ -229,6 +230,7 @@ df_grouped["yoy_change"] = (
 geo_path = "suburb-10-nsw.geojson"
 with open(geo_path) as f:
     geojson_data = json.load(f)
+
 suburb_key = "nsw_loca_2"
 suburb_list = df_grouped["suburb"].unique()
 geojson_data["features"] = [
@@ -236,6 +238,7 @@ geojson_data["features"] = [
     if f["properties"].get(suburb_key, "").upper() in suburb_list
 ]
 
+# === 3. Region label coordinates ===
 region_coords = {
     "Eastern Suburbs": (-33.90, 151.27),
     "Lower North Shore": (-33.82, 151.22),
@@ -253,6 +256,7 @@ region_coords = {
     "Southern Suburbs": (-33.98, 151.12),
 }
 
+# === 4. Create helper to add region labels ===
 def add_region_labels(fig):
     """Add text overlays for 14 major Sydney regions."""
     for region, (lat, lon) in region_coords.items():
@@ -260,16 +264,16 @@ def add_region_labels(fig):
             lat=[lat],
             lon=[lon],
             mode="text",
-            text=[f"<b>{region}</b>"],
-            textfont=dict(size=13, color="blue"),
+            text=[f"{region}"],
+            textfont=dict(size=13, color="dark gray"),
             textposition="middle center",
             hoverinfo="skip",
             showlegend=False,
         ))
     return fig
 
-# === 3. Median Price figure ===
-fig_median = px.choropleth_map(
+# === 5. Median Price Map ===
+fig_median = px.choropleth_mapbox(
     df_grouped,
     geojson=geojson_data,
     locations="suburb",
@@ -278,7 +282,7 @@ fig_median = px.choropleth_map(
     hover_name="suburb",
     hover_data={"SydneyRegion": True, "median": ":.0f", "yoy_change": ":.1f"},
     animation_frame="year",
-    map_style="carto-positron",
+    mapbox_style="carto-positron",
     color_continuous_scale="YlOrRd",
     range_color=(df_grouped["median"].quantile(0.05),
                  df_grouped["median"].quantile(0.95)),
@@ -287,11 +291,10 @@ fig_median = px.choropleth_map(
     zoom=9,
     opacity=0.75,
 )
-
 fig_median = add_region_labels(fig_median)
 
-# === 4. YoY Change figure ===
-fig_yoy = px.choropleth_map(
+# === 6. YoY Change Map ===
+fig_yoy = px.choropleth_mapbox(
     df_grouped,
     geojson=geojson_data,
     locations="suburb",
@@ -300,7 +303,7 @@ fig_yoy = px.choropleth_map(
     hover_name="suburb",
     hover_data={"SydneyRegion": True, "median": ":.0f", "yoy_change": ":.1f"},
     animation_frame="year",
-    map_style="carto-positron",
+    mapbox_style="carto-positron",
     color_continuous_scale="RdBu",
     range_color=(-20, 20),
     title="Sydney YoY Change in Median House Prices (%)",
@@ -308,8 +311,9 @@ fig_yoy = px.choropleth_map(
     zoom=9,
     opacity=0.75,
 )
+fig_yoy = add_region_labels(fig_yoy)
 
-# === 5. Save both figures to HTML and embed toggle controls ===
+# === 7. Save both figures to HTML with toggle buttons ===
 html_template = f"""
 <html>
 <head>
@@ -358,11 +362,12 @@ html_template = f"""
 </html>
 """
 
-with open("Graph3_sydney_price_heatmap_toggle.html", "w", encoding="utf-8") as f:
+output_path = "Graph3_sydney_price_heatmap_toggle.html"
+with open(output_path, "w", encoding="utf-8") as f:
     f.write(html_template)
 
-print("Saved: Graph3_sydney_price_heatmap_toggle.html")
-webbrowser.open("file://" + os.path.abspath("Graph3_sydney_price_heatmap_toggle.html"))
+print(f"Saved: {output_path}")
+webbrowser.open("file://" + os.path.abspath(output_path))
 
 
 # -----------------------------------------
