@@ -77,11 +77,11 @@ html_template = f"""
 <head>
     <title>Sydney House Prices</title>
     <style>
-        body {{ margin: 0; background: #fff; }}
+        body {{ margin: 0; background: #fff; padding-top: 20px; }}
         .button-container {{
             position: fixed;
             top: 10px;
-            left: 10px;
+            left: 80px;
             z-index: 100;
         }}
         button {{
